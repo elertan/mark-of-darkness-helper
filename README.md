@@ -5,39 +5,35 @@ Inspired by and based on the Thrall Helper plugin.
 Credits to the original author, PortAGuy.
 
 ## Configuration
+- Remind when about to expire
+  - Reminds you when Mark of Darkness is about to expire, instead of when it actually expires
+- Remind when holding autocasting staff
+  - Reminds you to cast Mark of Darkness when you are holding an autocasting staff, if Mark of Darkness is currently not active
+- Only remind when holding autocasting staff
+  - Only reminds you to cast Mark of Darkness when you are holding an autocasting staff (useful for staves like Purging Staff)
 - Notify when Mark of Darkness expires
-  - Enabling this will send a notification when Mark of Darkness expires
-- Timeout Reminder Box
-  - This is the amount of time before the reminder box disappears
+  - Sends a notification once Mark of Darkness needs to be cast
+- Timeout Mark of Darkness Box
+  - The duration in seconds before the Mark of Darkness box disappears
 - Flash the Reminder Box
-  - Flashes the reminder box when enabled (See Examples)
-- Only on Arceuus Spellbook
-  - Removes the reminder when not on the Arceuus spellbook
-- Mute Reminder Hotkey
-  - Lets a specified hotkey remove the reminder box completely
+  - Makes the reminder box flash between the defined colors
+- Hide Reminder Hotkey
+  - Use this hotkey to hide the reminder box
 - Flash Color #1
-  - The first color to flash between if the option is set, also controls the non-flashing reminder box color
+  - The first color to flash between, also controls the non-flashing color
 - Flash Color #2
-  - The second color to flash between if the option is set
-- Reminder Style
-  - Changes the style or text of the reminder box
-- Custom Text
-  - Allows for custom text in the reminder box if the custom text style is selected
+  - The second color to flash between
 
 [//]: # (## Examples)
 
+[//]: # ()
 [//]: # (### Flashing Enabled)
 
+[//]: # ()
 [//]: # (![]&#40;https://i.imgur.com/5Veu8cq.gif&#41;)
 
+[//]: # ()
 [//]: # (### Flashing Disabled)
 
+[//]: # ()
 [//]: # (![]&#40;https://i.imgur.com/Ima9DgP.png&#41;)
-
-[//]: # (### Short Text)
-
-[//]: # (![]&#40;https://i.imgur.com/S4rSbz7.png&#41;)
-
-[//]: # (### Infobox)
-
-[//]: # (![]&#40;https://i.imgur.com/U6RBtJG.png&#41;)
