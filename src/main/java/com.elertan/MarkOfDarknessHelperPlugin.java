@@ -134,14 +134,14 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
 
         if (message.contains(markOfDarknessPlacedUponYourselfMessage)) {
             // Mark of Darkness has been cast
-            System.out.println("Mark of Darkness has been cast!");
+//            System.out.println("Mark of Darkness has been cast!");
             isMarkOfDarknessActive = true;
 
             overlayManager.remove(overlay);
             infoBoxManager.removeInfoBox(infobox);
         } else if (message.contains(markOfDarknessAboutToRunOutMessage)) {
             // Mark of Darkness is about to run out
-            System.out.println("Mark of Darkness is about to run out!");
+//            System.out.println("Mark of Darkness is about to run out!");
 
             if (config.remindWhenAboutToExpire()) {
                 if (!config.onlyRemindWhenHoldingAutocastingStaff() || (config.onlyRemindWhenHoldingAutocastingStaff() && hasSpellOnAutocast())) {
@@ -151,7 +151,7 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
             }
         } else if (message.contains(markOfDarknessHasFadedAwayMessage)) {
             // Mark of Darkness has faded away
-            System.out.println("Mark of Darkness has faded away!");
+//            System.out.println("Mark of Darkness has faded away!");
             isMarkOfDarknessActive = false;
 
             if (!config.remindWhenAboutToExpire()) {
