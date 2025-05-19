@@ -27,7 +27,7 @@ public class MarkOfDarknessHelperOverlay extends OverlayPanel {
                 .left(text)
                 .build());
 
-        panelComponent.setPreferredSize(new Dimension(graphics.getFontMetrics().stringWidth(text) - 20, 0));
+        panelComponent.setPreferredSize(new Dimension(graphics.getFontMetrics().stringWidth(text) + 10, 0));
 
         if (config.shouldFlash()) {
             if (client.getGameCycle() % 40 >= 20) {

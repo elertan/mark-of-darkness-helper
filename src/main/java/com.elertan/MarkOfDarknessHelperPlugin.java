@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.MenuOptionClicked;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.Notifier;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -20,7 +18,6 @@ import net.runelite.client.util.HotkeyListener;
 import javax.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.regex.Matcher;
 
 @Slf4j
 @PluginDescriptor(
@@ -41,6 +38,7 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
     private Client client;
     @Inject
     private Notifier notifier;
+    private boolean isMarkOfDarknessActive = false;
 
     @Provides
     MarkOfDarknessHelperConfig getConfig(ConfigManager configManager) {
@@ -49,18 +47,18 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
 
     private MarkOfDarknessHelperInfobox infobox;
     private Instant lastExpiry;
-    private boolean isMarkOfDarknessClicked = false;
+    private boolean reminderShownDueToAutocastStaff = false;
+    private boolean isReminderShown = false;
 
-    private static final int SPELLBOOK_VARBIT = 4070;
     private static final int ARCEUUS_SPELLBOOK = 3;
+    private static final int VARBIT_SPELLBOOK = 4070;
+    private static final int VARBIT_AUTOCAST_SPELL = 276;
 
 
     private final HotkeyListener hideReminderHotkeyListener = new HotkeyListener(() -> config.hideReminderHotkey()) {
         @Override
         public void hotkeyPressed() {
-            overlayManager.remove(overlay);
-            infoBoxManager.removeInfoBox(infobox);
-            lastExpiry = null;
+            removeReminder();
         }
     };
 
@@ -73,57 +71,54 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
 
     @Override
     protected void shutDown() throws Exception {
-        overlayManager.remove(overlay);
-        infoBoxManager.removeInfoBox(infobox);
+        removeReminder();
         keyManager.unregisterKeyListener(hideReminderHotkeyListener);
     }
 
     @Subscribe
     public void onGameTick(GameTick event) {
         // Mark of Darkness can only be cast with the Arceuus spellbook
-        if (!(client.getVarbitValue(SPELLBOOK_VARBIT) == ARCEUUS_SPELLBOOK)) {
-            overlayManager.remove(overlay);
-            infoBoxManager.removeInfoBox(infobox);
-            lastExpiry = null;
-
+        if (!(client.getVarbitValue(VARBIT_SPELLBOOK) == ARCEUUS_SPELLBOOK)) {
+            removeReminder();
             return;
         }
 
-        // Check recasting Mark of Darkness
-//        if (isSpellClicked && (client.getLocalPlayer().getAnimation() == SUMMON_ANIMATION) || checkGraphic())
-//        {
-//            overlayManager.remove(overlay);
-//            infoBoxManager.removeInfoBox(infobox);
-//        }
-
+        // On timeout remove
         if (lastExpiry != null) {
             final Duration overlayTimeout = Duration.ofSeconds(config.markOfDarknessTimeoutSeconds());
             final Duration sinceExpiry = Duration.between(lastExpiry, Instant.now());
 
             if (sinceExpiry.compareTo(overlayTimeout) >= 0) {
-                overlayManager.remove(overlay);
-                infoBoxManager.removeInfoBox(infobox);
-                lastExpiry = null;
+                removeReminder();
+            }
+        }
+
+        if (!isMarkOfDarknessActive) {
+            if (config.remindWhenHoldingAutocastingStaff() && hasSpellOnAutocast()) {
+                reminderShownDueToAutocastStaff = true;
+                showReminder(false);
+            } else if (reminderShownDueToAutocastStaff) {
+                reminderShownDueToAutocastStaff = false;
+                // If the player is not holding the autocasting staff anymore, remove the reminder
+                removeReminder();
             }
         }
     }
 
-    @Subscribe
-    public void onMenuOptionClicked(MenuOptionClicked event) {
-        // Check if the clicked menu option is "Mark of Darkness"
-        String menuTarget = event.getMenuTarget();
-        System.out.println("Menu target clicked: " + menuTarget);
-        if (!menuTarget.contains("Mark of Darkness")) {
-            return;
-        }
-
-        Widget widget = event.getWidget();
-        if (widget == null) {
-            return;
-        }
-
-        isMarkOfDarknessClicked = true;
-    }
+//    @Subscribe
+//    public void onMenuOptionClicked(MenuOptionClicked event) {
+//        // Check if the clicked menu option is "Mark of Darkness"
+//        String menuTarget = event.getMenuTarget();
+//        if (!menuTarget.contains("Mark of Darkness")) {
+//            return;
+//        }
+//        System.out.println("Mark of Darkness has been clicked...");
+//
+//        Widget widget = event.getWidget();
+//        if (widget == null) {
+//            return;
+//        }
+//    }
 
     @Subscribe
     public void onChatMessage(ChatMessage event) {
@@ -136,36 +131,63 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
         final String markOfDarknessHasFadedAwayMessage = "Your Mark of Darkness has faded away.";
 
         final String message = event.getMessage();
-        System.out.println("Chat message: " + message);
 
         if (message.contains(markOfDarknessPlacedUponYourselfMessage)) {
             // Mark of Darkness has been cast
             System.out.println("Mark of Darkness has been cast!");
+            isMarkOfDarknessActive = true;
 
             overlayManager.remove(overlay);
             infoBoxManager.removeInfoBox(infobox);
-            isMarkOfDarknessClicked = false;
         } else if (message.contains(markOfDarknessAboutToRunOutMessage)) {
             // Mark of Darkness is about to run out
             System.out.println("Mark of Darkness is about to run out!");
+
+            if (config.remindWhenAboutToExpire()) {
+                if (!config.onlyRemindWhenHoldingAutocastingStaff() || (config.onlyRemindWhenHoldingAutocastingStaff() && hasSpellOnAutocast())) {
+                    reminderShownDueToAutocastStaff = false;
+                    showReminder(true);
+                }
+            }
         } else if (message.contains(markOfDarknessHasFadedAwayMessage)) {
             // Mark of Darkness has faded away
             System.out.println("Mark of Darkness has faded away!");
+            isMarkOfDarknessActive = false;
 
-            // If the spell has been cast there is no need to notify
-            if (!isMarkOfDarknessClicked) {
-                if (!infoBoxManager.getInfoBoxes().contains(infobox)) {
-                    infoBoxManager.addInfoBox(infobox);
-                }
-
-                lastExpiry = Instant.now();
-                if (config.shouldNotify()) {
-                    notifier.notify("Cast Mark of Darkness!");
+            if (!config.remindWhenAboutToExpire()) {
+                if (!config.onlyRemindWhenHoldingAutocastingStaff() || (config.onlyRemindWhenHoldingAutocastingStaff() && hasSpellOnAutocast())) {
+                    reminderShownDueToAutocastStaff = false;
+                    showReminder(true);
                 }
             }
         }
     }
 
+    private void showReminder(boolean withNotify) {
+        isReminderShown = true;
+        overlayManager.add(overlay);
+
+        lastExpiry = Instant.now();
+        if (config.shouldNotify() && withNotify) {
+            notifier.notify("Cast Mark of Darkness!");
+        }
+    }
+
+    private void removeReminder() {
+        isReminderShown = false;
+        overlayManager.remove(overlay);
+        infoBoxManager.removeInfoBox(infobox);
+        lastExpiry = null;
+    }
+
+    private int getAutocastSpellId() {
+        return client.getVarbitValue(VARBIT_AUTOCAST_SPELL);
+    }
+
+    private boolean hasSpellOnAutocast() {
+        int spellId = getAutocastSpellId();
+        return spellId != 0;
+    }
 
 //    private boolean hasBookOfTheDead()
 //    {
@@ -182,3 +204,4 @@ public class MarkOfDarknessHelperPlugin extends Plugin {
         return false;
     }
 }
+
